@@ -1,5 +1,3 @@
-require 'pry-byebug'
-
 # module for displaying stuff
 module Display
   def display_intro
@@ -22,6 +20,10 @@ module Display
   def display_hint_info
     puts 'X is for correct guess in correct position'
     puts 'O is for correct guess in wrong position'
+  end
+
+  def display_input_guess_count
+    puts 'how many guesses u want ? ideally it should be 12, max is 20 :'
   end
 end
 
@@ -65,7 +67,7 @@ class GameLogic
   include Display
 
   def initialize
-    @num_of_guesses = 1
+    @num_of_guesses = nil # will be descided by user
     @hints = []
   end
 
@@ -95,8 +97,11 @@ class GameLogic
       end
     end
 
-    player_mod.each do |elm| # now to find o we loop over [3,4,1] & [1,0,3] and not the original this enures correct num of Os
-      hints.push('O') if comp_mod.include?(elm)
+    comp_mod.each do |elm| # now to find o we loop over [3,4,1] & [1,0,3] and not the original this enures correct num of Os
+      if player_mod.include?(elm) # swappeing comp_mod and player_mod in above 2 lines seems to fix bugs fr some secret codes
+        hints.push('O')
+
+      end
     end
     player.guess = [] # player guess needs to be reset else on 2nd guess it becomes like [1,2,3,2,4,5,3,1] i.e has 2 guesses in 1
     hints.shuffle # so u dont know which num are we talking about
@@ -105,6 +110,17 @@ class GameLogic
   # It would be truthy if string contains only digits or if it is an empty string. Otherwise returns false.
   def check_string(string)
     string.scan(/\D/).empty?
+  end
+
+  def ask_guess_count
+    display_input_guess_count
+    input = gets.chomp
+    if check_string(input) && input.to_i < 20
+      return self.num_of_guesses = input.to_i
+    end
+
+    puts 'invalid input for guess try again ...'
+    ask_guess_count
   end
 
   # checks and gets input from user
@@ -125,12 +141,11 @@ class GameLogic
   def play
     display_intro
     display_hint_info
+    ask_guess_count
     display_chances(num_of_guesses)
     player = Player.new
     comp = Comp.new
     comp.generate_code
-    # puts "ans was #{comp.secret_code}"
-    # binding.pry
     while num_of_guesses != 0 || !win?
       get_input(player)
       if win?(comp, player) # u win
