@@ -1,7 +1,20 @@
 # module for displaying stuff
 module Display
-  def display_intro
-    puts 'We are playing mastermind'
+  def display_intro_code_breaker
+    puts 'We are playing mastermind and u are the code breaker'
+  end
+
+  def display_intro_code_maker
+    puts 'We are playing mastermind and u are the code maker'
+  end
+
+  def display_create_secret_code
+    puts 'enter a 4 digit number with digits ranging from 1-6'
+  end
+
+  def choose_game
+    puts 'press 1 : code breaker'
+    puts 'press 2 : code maker'
   end
 
   def display_ask_input
@@ -138,8 +151,8 @@ class GameLogic
   end
 
   # 1 round of mastermind
-  def play
-    display_intro
+  def play_code_breaker
+    display_intro_code_breaker
     display_hint_info
     ask_guess_count
     display_chances(num_of_guesses)
@@ -167,7 +180,7 @@ end
 # replaybility
 def play_game
   game = GameLogic.new
-  game.play
+  game.play_code_breaker
   repeat_game
 end
 
