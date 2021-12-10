@@ -65,7 +65,7 @@ class GameLogic
   include Display
 
   def initialize
-    @num_of_guesses = 12
+    @num_of_guesses = 1
     @hints = []
   end
 
@@ -149,5 +149,21 @@ class GameLogic
   end
 end
 
-game = GameLogic.new
-game.play
+# replaybility
+def play_game
+  game = GameLogic.new
+  game.play
+  repeat_game
+end
+
+def repeat_game
+  puts "Would you like to play a new game? Press 'y' for yes or 'n' for no."
+  repeat_input = gets.chomp.downcase
+  if repeat_input == 'y'
+    play_game
+  else
+    puts 'Thanks for playing!'
+  end
+end
+
+play_game
