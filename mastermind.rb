@@ -42,6 +42,16 @@ module Display
   def display_random_guess(guess)
     puts "comp guessed : #{guess}"
   end
+
+  # return 1 or 2
+  def display_ask_game_choice
+    display_choose_game
+    choice = gets.chomp
+    return choice if choice == '1' || choice == '2'
+
+    puts 'erronous input !!!'
+    display_ask_game_choice
+  end
 end
 
 # comp class that holds secret code
@@ -92,12 +102,14 @@ end
 # class to dictate game flow and stores all logic
 class GameLogic
   attr_accessor :num_of_guesses, :hints
+  attr_reader :game_mode
 
   include Display
 
-  def initialize
+  def initialize(mode)
     @num_of_guesses = nil # will be descided by user
     @hints = []
+    @game_mode = mode
   end
 
   def win?(comp, player)
@@ -203,6 +215,7 @@ class GameLogic
   end
 
   # 1 round of mastermind as code maker
+  # swapped player and comp positions in arguments so roles are switched
   def play_code_maker
     player = Player.new
     comp = Comp.new
@@ -230,20 +243,11 @@ class GameLogic
   end
 end
 
-def ask_game_choice
-  include Display
-  display_choose_game
-  choice = gets.chomp
-  return choice if choice == '1' || choice == '2'
-
-  puts 'erronous input !!!'
-  ask_game_choice
-end
-
 # replaybility
 def play_game
-  game = GameLogic.new
-  choice = ask_game_choice
+  include Display
+  choice = display_ask_game_choice # as this method is a display method
+  game = GameLogic.new(choice)
   choice == '1' ? game.play_code_breaker : game.play_code_maker
   repeat_game
 end
