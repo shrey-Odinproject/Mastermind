@@ -9,10 +9,10 @@ module Display
   end
 
   def display_create_secret_code
-    puts 'enter a 4 digit number with digits ranging from 1-6'
+    puts 'Create a code with 4 digit number with digits ranging from 1-6'
   end
 
-  def choose_game
+  def display_choose_game
     puts 'press 1 : code breaker'
     puts 'press 2 : code maker'
   end
@@ -38,14 +38,23 @@ module Display
   def display_input_guess_count
     puts 'how many guesses u want ? ideally it should be 12, max is 20 :'
   end
+
+  def display_random_guess(guess)
+    puts "comp guessed : #{guess}"
+  end
 end
 
 # comp class that holds secret code
 class Comp
-  attr_reader :secret_code
+  attr_accessor :secret_code, :guess
 
   def initialize
     @secret_code = []
+    @guess = []
+  end
+
+  def make_random_guess
+    guess.push(rand(1..6)) while guess.length < 4
   end
 
   def generate_code
@@ -54,11 +63,18 @@ class Comp
 end
 
 # the player of game
-class Player
-  attr_accessor :guess
+class Player < Comp
+  attr_accessor :guess, :secret_code
 
-  def initialize
-    @guess = []
+  # as now both player and comp now have guess and secret code a seprate initialize is not needed
+
+  def make_code(num)
+    while num != 0
+      a = num % 10
+      secret_code.push(a)
+      num /= 10
+    end
+    secret_code.reverse!
   end
 
   # player will type a number and it will be passed to this method
@@ -110,12 +126,22 @@ class GameLogic
       end
     end
 
-    comp_mod.each do |elm| # now to find o we loop over [3,4,1] & [1,0,3] and not the original this enures correct num of Os
-      if player_mod.include?(elm) # swappeing comp_mod and player_mod in above 2 lines seems to fix bugs fr some secret codes
-        hints.push('O')
-
+    repeat = true # this as done above is to reset iteration after any kind of removal from guess or secret code
+    while repeat # reseting iteration ensures bugfree hints and is corrrect implementation of how i envisioned hints func to work
+      repeat = false
+      comp_mod.each_with_index do |elm, idx| # now to find o we loop over [3,4,1] & [1,0,3] and not the original this enures correct num of Os
+        if player_mod.include?(elm) # swappeing comp_mod and player_mod in above 2 lines seems to fix bugs fr some secret codes
+          hints.push('O')
+          player_mod.delete_at(player_mod.index(elm)) # removes only 1st occurence of duplicate and not all duplicates
+          # these changes were made looking at case code=1122, guess=3324, hint was OO instead of correct hint O
+          # if no while to reset then sec=1122, guess=2211 we got OO instead of correct OOOO
+          comp_mod.delete_at(idx)
+          repeat = true
+          break
+        end
       end
     end
+
     player.guess = [] # player guess needs to be reset else on 2nd guess it becomes like [1,2,3,2,4,5,3,1] i.e has 2 guesses in 1
     hints.shuffle # so u dont know which num are we talking about
   end
@@ -128,7 +154,7 @@ class GameLogic
   def ask_guess_count
     display_input_guess_count
     input = gets.chomp
-    if check_string(input) && input.to_i < 20
+    if check_string(input) && input.to_i <= 20
       return self.num_of_guesses = input.to_i
     end
 
@@ -150,7 +176,7 @@ class GameLogic
     end
   end
 
-  # 1 round of mastermind
+  # 1 round of mastermind as code breaker
   def play_code_breaker
     display_intro_code_breaker
     display_hint_info
@@ -175,12 +201,50 @@ class GameLogic
     end
     puts 'game over'
   end
+
+  # 1 round of mastermind as code maker
+  def play_code_maker
+    player = Player.new
+    comp = Comp.new
+    display_intro_code_maker
+    display_create_secret_code
+    secret_code_made = gets.chomp.to_i
+    player.make_code(secret_code_made)
+    ask_guess_count
+    display_chances(num_of_guesses)
+    while num_of_guesses != 0 || !win?
+      comp.make_random_guess
+      display_random_guess(comp.guess)
+      if win?(player, comp) # u win
+        puts 'Victory!! '
+        break
+      end
+      self.num_of_guesses -= 1
+      puts "hint: #{give_hint(player, comp).join}"
+      display_chances(num_of_guesses)
+      if num_of_guesses == 0 # u lost
+        puts "ans was #{player.secret_code}"
+        break
+      end
+    end
+  end
+end
+
+def ask_game_choice
+  include Display
+  display_choose_game
+  choice = gets.chomp
+  return choice if choice == '1' || choice == '2'
+
+  puts 'erronous input !!!'
+  ask_game_choice
 end
 
 # replaybility
 def play_game
   game = GameLogic.new
-  game.play_code_breaker
+  choice = ask_game_choice
+  choice == '1' ? game.play_code_breaker : game.play_code_maker
   repeat_game
 end
 
