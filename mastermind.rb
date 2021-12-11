@@ -1,3 +1,5 @@
+# frozen_string_literal:true
+
 # module for displaying stuff
 module Display
   def display_intro_code_breaker
@@ -112,6 +114,22 @@ class GameLogic
     @game_mode = mode
   end
 
+  # It would be truthy if string contains only digits or if it is an empty string. Otherwise returns false.
+  def check_string(string)
+    string.scan(/\D/).empty?
+  end
+
+  def ask_guess_count
+    display_input_guess_count
+    input = gets.chomp
+    if check_string(input) && input.to_i <= 20
+      return self.num_of_guesses = input.to_i
+    end
+
+    puts 'invalid input for guess try again ...'
+    ask_guess_count
+  end
+
   def win?(comp, player)
     return true if comp.secret_code == player.guess
 
@@ -158,22 +176,6 @@ class GameLogic
     hints.shuffle # so u dont know which num are we talking about
   end
 
-  # It would be truthy if string contains only digits or if it is an empty string. Otherwise returns false.
-  def check_string(string)
-    string.scan(/\D/).empty?
-  end
-
-  def ask_guess_count
-    display_input_guess_count
-    input = gets.chomp
-    if check_string(input) && input.to_i <= 20
-      return self.num_of_guesses = input.to_i
-    end
-
-    puts 'invalid input for guess try again ...'
-    ask_guess_count
-  end
-
   # checks and gets input from user
   def get_input(player)
     while true
@@ -200,18 +202,18 @@ class GameLogic
     while num_of_guesses != 0 || !win?
       get_input(player)
       if win?(comp, player) # u win
-        puts 'Victory!! '
+        puts 'Player Victory!! '
         break
       end
       self.num_of_guesses -= 1
       puts "hint: #{give_hint(comp, player).join}"
       display_chances(num_of_guesses)
       if num_of_guesses == 0 # u lost
-        puts "ans was #{comp.secret_code}"
+        puts "Player lost, ans was #{comp.secret_code}"
         break
       end
     end
-    puts 'game over'
+    puts 'Game Over'
   end
 
   # 1 round of mastermind as code maker
@@ -221,25 +223,31 @@ class GameLogic
     comp = Comp.new
     display_intro_code_maker
     display_create_secret_code
-    secret_code_made = gets.chomp.to_i
+    while true # validate user created secret code
+      secret_code_made = gets.chomp.to_i # get code from user
+      break if secret_code_made <= 6666 && secret_code_made >= 1111
+
+      puts 'invalid code, code must be between 1111 and 6666 (both inclusive)'
+    end
     player.make_code(secret_code_made)
     ask_guess_count
     display_chances(num_of_guesses)
     while num_of_guesses != 0 || !win?
       comp.make_random_guess
       display_random_guess(comp.guess)
-      if win?(player, comp) # u win
-        puts 'Victory!! '
+      if win?(player, comp) # comp win
+        puts 'Comp Victory!! '
         break
       end
       self.num_of_guesses -= 1
       puts "hint: #{give_hint(player, comp).join}"
       display_chances(num_of_guesses)
       if num_of_guesses == 0 # u lost
-        puts "ans was #{player.secret_code}"
+        puts "Comp lost, ans was #{player.secret_code}"
         break
       end
     end
+    puts 'Game Over'
   end
 end
 
