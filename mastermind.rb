@@ -38,7 +38,7 @@ module Display
   end
 
   def display_input_guess_count
-    puts 'how many guesses u want ? ideally it should be 12, max is 20 :'
+    puts 'how many guesses u want ? ideally it should be 12, max is 20/1000 for player/comp :'
   end
 
   def display_random_guess(guess)
@@ -122,7 +122,8 @@ class GameLogic
   def ask_guess_count
     display_input_guess_count
     input = gets.chomp
-    if check_string(input) && input.to_i <= 20
+    if check_string(input) && (game_mode == '1' ? input.to_i <= 20 : input.to_i <= 1000)
+      # if mode is code breaker u get max 20 guess, if code maker, comp get 1000 guesses (because all comp guess r random)
       return self.num_of_guesses = input.to_i
     end
 
@@ -136,42 +137,54 @@ class GameLogic
     false
   end
 
-  # gives Xs and Os according to guess
-  def give_hint(comp, player)
-    @hints = []
-    player_mod = player.guess.clone # so we dont modify our guess mid way of programm
-    comp_mod = comp.secret_code.clone # we use clone because we cant modify original secret code
+  # hints is first modified Xs
+  def hints_adding_Xs(comp_clone, player_clone, hints)
     repeat = true # determines if we repeat 'each' loop from idx 0
-    while repeat # whenever X is found array are changed and each loop is reset and run again from idx =0
+    while repeat # whenever X is found array are changed, and 'each' loop is reset and run again from idx =0
       repeat = false
-      player_mod.each_with_index do |_elm, idx|
-        if player_mod[idx] == comp_mod[idx] # we check for Xs and remove both same elements from both arrays
+      player_clone.each_with_index do |_elm, idx|
+        if player_clone[idx] == comp_clone[idx] # we check for Xs and remove both same elements from both arrays
           # eg [1,1,0,3]sec [3,1,4,1]guess so they become [1,0,3] & [3,4,1] and hints=[X]
+          # then each loop now runs on [1,0,3] & [3,4,1]
           hints.push('X')
-          player_mod.delete_at(idx)
-          comp_mod.delete_at(idx)
+          player_clone.delete_at(idx)
+          comp_clone.delete_at(idx)
           repeat = true
           break
         end
       end
     end
+    [comp_clone, player_clone, hints] # we return 3 things because we have to pass them to 'def hints_adding_Os'
+  end
 
+  # adds Os to hints which only contains Xs until now and  return the complete hint
+  def hints_adding_Os(comp_clone, player_clone, hints)
     repeat = true # this as done above is to reset iteration after any kind of removal from guess or secret code
     while repeat # reseting iteration ensures bugfree hints and is corrrect implementation of how i envisioned hints func to work
       repeat = false
-      comp_mod.each_with_index do |elm, idx| # now to find o we loop over [3,4,1] & [1,0,3] and not the original this enures correct num of Os
-        if player_mod.include?(elm) # swappeing comp_mod and player_mod in above 2 lines seems to fix bugs fr some secret codes
+      comp_clone.each_with_index do |elm, idx| # now to find o we loop over [3,4,1] & [1,0,3] and not the original this ensures correct num of Os
+        if player_clone.include?(elm) # swappeing comp_clone and player_clone in above 2 lines seems to fix bugs fr some secret codes
           hints.push('O')
-          player_mod.delete_at(player_mod.index(elm)) # removes only 1st occurence of duplicate and not all duplicates
-          # these changes were made looking at case code=1122, guess=3324, hint was OO instead of correct hint O
+          player_clone.delete_at(player_clone.index(elm)) # removes only 1st occurence of duplicate and not all duplicates
+          # these changes were made looking at case code=1122, guess=3324, hint was OO instead of correct hint X
           # if no while to reset then sec=1122, guess=2211 we got OO instead of correct OOOO
-          comp_mod.delete_at(idx)
+          comp_clone.delete_at(idx)
           repeat = true
           break
         end
       end
     end
+    hints
+  end
 
+  # gives Xs and Os according to guess
+  def give_hint(comp, player)
+    @hints = []
+    player_clone = player.guess.clone # so we dont modify our guess mid way of programm
+    comp_clone = comp.secret_code.clone # we use clone because we cant modify original secret code
+    only_Xs = hints_adding_Xs(comp_clone, player_clone, hints) # adds only Xs to hints and does some modification
+    hints = hints_adding_Os(only_Xs[0], only_Xs[1], only_Xs[2]) # info of Xs is passed to Os to correctly figure out Os
+    # then the final hint is store in @hints
     player.guess = [] # player guess needs to be reset else on 2nd guess it becomes like [1,2,3,2,4,5,3,1] i.e has 2 guesses in 1
     hints.shuffle # so u dont know which num are we talking about
   end
@@ -217,7 +230,7 @@ class GameLogic
   end
 
   # 1 round of mastermind as code maker
-  # swapped player and comp positions in arguments so roles are switched
+  # MAIN IDEA : swapped player and comp positions in arguments so roles are switched
   def play_code_maker
     player = Player.new
     comp = Comp.new
