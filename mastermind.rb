@@ -194,7 +194,9 @@ class GameLogic
     while true
       display_ask_input
       input = gets.chomp
-      if input.length != 4 || !check_string(input) || input.include?('0')
+      if input.length != 4 || !check_string(input) || ['0', '7', '8', '9'].any? { |digit|
+           input.include?(digit)
+         } # should not have any of these nums anywhere
         display_input_error_msg
       else
         player.make_guess(input.to_i)
@@ -222,7 +224,7 @@ class GameLogic
       puts "hint: #{give_hint(comp, player).join}"
       display_chances(num_of_guesses)
       if num_of_guesses == 0 # u lost
-        puts "Player lost, ans was #{comp.secret_code}"
+        puts "Player lost, ans was #{comp.secret_code.join}"
         break
       end
     end
@@ -236,13 +238,15 @@ class GameLogic
     comp = Comp.new
     display_intro_code_maker
     display_create_secret_code
-    while true # validate user created secret code
+    while true # validate 'user created secret code', this is different way from the one used in code breaker
       secret_code_made = gets.chomp.to_i # get code from user
-      break if secret_code_made <= 6666 && secret_code_made >= 1111
+      break if secret_code_made <= 6666 && secret_code_made >= 1111 && !['0', '7', '8', '9'].any? { |digit|
+                 secret_code_made.to_s.include?(digit)
+               }
 
-      puts 'invalid code, code must be between 1111 and 6666 (both inclusive)'
+      puts 'invalid code, code must be between 1111 and 6666 (both inclusive), no 7,8,9,0 allowed '
     end
-    player.make_code(secret_code_made)
+    player.make_code(secret_code_made) # this wont happen until input is valid
     ask_guess_count
     display_chances(num_of_guesses)
     while num_of_guesses != 0 || !win?
@@ -256,7 +260,7 @@ class GameLogic
       puts "hint: #{give_hint(player, comp).join}"
       display_chances(num_of_guesses)
       if num_of_guesses == 0 # u lost
-        puts "Comp lost, ans was #{player.secret_code}"
+        puts "Comp lost, ans was #{player.secret_code.join}"
         break
       end
     end
