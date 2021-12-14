@@ -3,11 +3,11 @@
 # module for displaying stuff
 module Display
   def display_intro_code_breaker
-    puts 'We are playing mastermind and u are the code breaker'
+    puts 'We are playing mastermind and u are the Code Breaker'
   end
 
   def display_intro_code_maker
-    puts 'We are playing mastermind and u are the code maker'
+    puts 'We are playing mastermind and u are the Code Maker (no rules are modified for comp)'
   end
 
   def display_create_secret_code
@@ -16,7 +16,8 @@ module Display
 
   def display_choose_game
     puts 'press 1 : code breaker'
-    puts 'press 2 : code maker'
+    puts 'press 2 : code maker (smart comp)'
+    puts 'press 0 : code maker (dumb comp)'
   end
 
   def display_ask_input
@@ -24,8 +25,9 @@ module Display
   end
 
   def display_chances(chance)
-    puts "U have #{chance} chances remaining"
-    puts '----------'
+    puts "U have #{chance} chances " if game_mode == '1'
+    puts "Comp has #{chance} chances" if game_mode == '0'
+    puts '_______________________'
   end
 
   def display_input_error_msg
@@ -38,18 +40,18 @@ module Display
   end
 
   def display_input_guess_count
-    puts 'how many guesses u want ? ideally it should be 12, max is 20/1000 for player/comp :'
+    puts 'how many guesses u want ? ideally it should be 12, max is 20 :'
   end
 
   def display_random_guess(guess)
-    puts "comp guessed : #{guess}"
+    puts "comp guessed : #{guess.join}"
   end
 
   # return 1 or 2
   def display_ask_game_choice
     display_choose_game
     choice = gets.chomp
-    return choice if choice == '1' || choice == '2'
+    return choice if choice == '1' || choice == '2' || choice == '0'
 
     puts 'erronous input !!!'
     display_ask_game_choice
@@ -122,7 +124,7 @@ class GameLogic
   def ask_guess_count
     display_input_guess_count
     input = gets.chomp
-    if check_string(input) && (game_mode == '1' ? input.to_i <= 20 : input.to_i <= 1000)
+    if check_string(input) && input.to_i <= 20
       # if mode is code breaker u get max 20 guess, if code maker, comp get 1000 guesses (because all comp guess r random)
       return self.num_of_guesses = input.to_i
     end
@@ -233,7 +235,7 @@ class GameLogic
 
   # 1 round of mastermind as code maker
   # MAIN IDEA : swapped player and comp positions in arguments so roles are switched
-  def play_code_maker
+  def play_code_maker_dumb
     player = Player.new
     comp = Comp.new
     display_intro_code_maker
@@ -266,6 +268,25 @@ class GameLogic
     end
     puts 'Game Over'
   end
+
+  def play_code_maker_smart
+    require './swaszeck.rb'
+    player = Player.new
+    display_intro_code_maker
+    display_create_secret_code
+    while true # validate 'user created secret code', this is different way from the one used in code breaker
+      secret_code_made = gets.chomp.to_i # get code from user
+      break if secret_code_made <= 6666 && secret_code_made >= 1111 && !['0', '7', '8', '9'].any? { |digit|
+                 secret_code_made.to_s.include?(digit)
+               }
+
+      puts 'invalid code, code must be between 1111 and 6666 (both inclusive), no 7,8,9,0 allowed '
+    end
+    code = player.make_code(secret_code_made) # gets code we entered in array format
+    guess_count = ask_num_of_guesses # gets int of our input from other file
+    swaz(code, guess_count) # call the main algo from other file
+    puts 'Game Over'
+  end
 end
 
 # replaybility
@@ -273,7 +294,17 @@ def play_game
   include Display
   choice = display_ask_game_choice # as this method is a display method
   game = GameLogic.new(choice)
-  choice == '1' ? game.play_code_breaker : game.play_code_maker
+  if choice == '1'
+    game.play_code_breaker
+  elsif choice == '2'
+    game.play_code_maker_smart
+  elsif choice == '0'
+    game.play_code_maker_dumb
+  else
+    puts 'invalid input'
+    play_game
+  end
+
   repeat_game
 end
 
